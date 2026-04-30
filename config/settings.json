@@ -1,0 +1,4 @@
+{
+  "database": "postgres://user:password_in_config@localhost:5432/db",
+  "github_token": "ghp_1234567890abcdefghijklmnopqrstuvwxyz1234567890"
+}
