@@ -3,8 +3,8 @@ on: push
 
 permissions:
   contents: read
-  security-events: write
   actions: read
+  security-events: write
 
 jobs:
   secret:
@@ -21,10 +21,21 @@ jobs:
         chmod +x /usr/local/bin/gitleaks
         mkdir -p scan_results
         gitleaks dir \
-          --report-path "scan_results/gitleaks.sarif" \
+          --report-path "scan_results/gitleaks.raw.sarif" \
           --report-format sarif \
           "$GITHUB_WORKSPACE"
          
+    - name: Fix SARIF paths (convert absolute to relative)
+      run: |
+        # Создаём копию с относительными путями
+        cat scan_results/gitleaks.raw.sarif | \
+          sed "s|$GITHUB_WORKSPACE/||g" > \
+          scan_results/gitleaks.sarif
+        
+        # Опционально: показываем разницу (для отладки)
+        echo "First few lines of fixed SARIF:"
+        head -n 20 scan_results/gitleaks.sarif
+
     - name: Upload scan results as artifacts
       if: steps.gitleaks.outcome == 'failure'
       uses: actions/upload-artifact@v4
@@ -35,7 +46,7 @@ jobs:
 
     - name: Upload SARIF to GitHub Security
       if: always() && hashFiles('scan_results/gitleaks.sarif') != ''
-      uses: github/codeql-action/upload-sarif@v4
+      uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: scan_results/gitleaks.sarif
         category: gitleaks-scanner
