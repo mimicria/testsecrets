@@ -50,3 +50,8 @@ jobs:
       with:
         sarif_file: scan_results/gitleaks.sarif
         category: gitleaks-scanner
+
+    - name: trufflehog
+      uses: trufflesecurity/trufflehog@main
+      with:
+        extra_args: --results=verified,unknown
