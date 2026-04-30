@@ -3,6 +3,7 @@ on: push
 
 permissions:
   contents: read
+  security-events: read
   security-events: write
   actions: read
 
