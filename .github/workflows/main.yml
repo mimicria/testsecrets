@@ -1,0 +1,40 @@
+name: Find Secrets
+on: push
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  secret:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Gitleaks
+      id: gitleaks
+      continue-on-error: true
+      run: |
+        curl -sSL https://github.com/gitleaks/gitleaks/releases/download/v8.30.0/gitleaks_8.30.0_linux_x64.tar.gz | tar -xz -C /usr/local/bin gitleaks
+        chmod +x /usr/local/bin/gitleaks
+        mkdir -p scan_results
+        gitleaks dir \
+          --report-path "scan_results/gitleaks.sarif" \
+          --report-format sarif \
+          "$GITHUB_WORKSPACE"
+         
+    - name: Upload scan results as artifacts
+      if: steps.gitleaks.outcome == 'failure'
+      uses: actions/upload-artifact@v4
+      with:
+        name: gitleaks-scan-results
+        path: scan_results/*.sarif
+        retention-days: 30
+
+    - name: Upload SARIF to GitHub Security
+      if: always() && hashFiles('scan_results/gitleaks.sarif') != ''
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: scan_results/gitleaks.sarif
+        category: gitleaks-scanner
